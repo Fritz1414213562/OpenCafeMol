@@ -33,6 +33,7 @@
 #include "src/forcefield/EXVRectangularBoxForceFieldGenerator.hpp"
 #include "src/forcefield/CappedGoContactForceFieldGenerator.hpp"
 #include "src/forcefield/CylindricalRestraintForceFieldGenerator.hpp"
+#include "src/forcefield/KimHummerHydrophobicForceFieldGenerator.hpp"
 
 #include "src/Topology.hpp"
 #include "src/input/Utility.hpp"
@@ -227,6 +228,13 @@ read_toml_combinatorial_go_contact_ff_generators(
 ProteinDNANonSpecificForceFieldGenerator
 read_toml_protein_dna_non_specific_ff_generator(
     const  toml::value& global_ff_data, const bool use_periodic);
+
+KimHummerHydrophobicForceFieldGenerator
+read_toml_kim_hummer_hydrophobic_ff_generator(
+    const toml::value& global_ff_data, const std::size_t system_size, const double temperature,
+    const Topology& topology, const std::vector<std::optional<std::string>>& group_vec,
+    const bool use_periodic);
+
 
 // -----------------------------------------------------------------------------
 // read external force field

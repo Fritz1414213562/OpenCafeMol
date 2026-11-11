@@ -2492,6 +2492,78 @@ read_toml_protein_dna_non_specific_ff_generator(
         ks, r0s, theta0s, phi0s, use_periodic);
 }
 
+// [[forcefields.global]]
+// potential = "KimHummerHydrophobic"
+// cutoff    = 2.0
+// epsilon   = -1.36 // RT
+// alpha     = 0.159
+// parameters = [
+// {index =     0, sigma = 5.0, name = "ASP"},
+// {index =     1, sigma = 5.0, name = "MET"},
+// {index =     2, sigma = 5.0, name = "CYA"},
+// {index =     3, sigma = 5.0, name = "LYS"},
+// ...
+// ]
+KimHummerHydrophobicForceFieldGenerator
+read_toml_kim_hummer_hydrophobic_ff_generator(
+        const toml::value& global_ff_data, const std::size_t system_size, const double temperature,
+        const Topology& topology, const std::vector<std::optional<std::string>>& group_vec,
+        const bool use_periodic)
+{
+    check_keys_available(global_ff_data,
+            {"interaction", "potential", "ignore", "cutoff", "epsilon", "alpha", "parameters", "env"});
+
+    using index_pairs_type = std::vector<std::pair<std::size_t, std::size_t>>;
+
+    const auto& params = toml::find<toml::array>(global_ff_data, "parameters");
+    const auto& env = global_ff_data.contains("env") ? global_ff_data.at("env") : toml::value{};
+    const double cutoff = Utility::find_parameter_or<double>(global_ff_data, env, "cutoff", 2.0);
+    const double epsilon = toml::find<double>(global_ff_data, "epsilon") * OpenMM::KJPerKcal; // KJ/mol
+	const double alpha   = toml::find<double>(global_ff_data, "alpha") * OpenMM::KJPerKcal; // KJ/mol
+
+    std::vector<std::optional<double>> radius_vec(system_size, std::nullopt);
+	std::vector<std::optional<std::string>> restype_vec(system_size, std::nullopt);
+
+    for(const auto& param : params)
+    {
+        std::size_t index =
+            Utility::find_parameter<std::size_t>(param, env, "index");
+        const auto offset =
+            Utility::find_parameter_or<toml::value>(
+                    param, env, "offset", toml::value(0));
+        add_offset(index, offset);
+
+        if(topology.size() <= index)
+        {
+            throw std::runtime_error("[error] read_toml_excluded_volume_ff_generator : index "+std::to_string(index)+" exceeds the system's largest index "+std::to_string(topology.size()-1)+".");
+        }
+
+        const double      radius =
+            Utility::find_parameter<double>(param, env, "sigma") * OpenMM::NmPerAngstrom; // nm
+        radius_vec[index] = radius;
+
+		const std::string restype = toml::find<std::string>(param, "name");
+		restype_vec[index] = restype;
+    }
+
+    std::cerr << "    Global        : Kim-Hummer Hydrophobic (" << params.size()
+               << " found)" << std::endl;
+
+    // ignore list generation
+    index_pairs_type ignore_list;
+    std::vector<std::pair<std::string, std::string>> ignore_group_pairs;
+    if(global_ff_data.contains("ignore"))
+    {
+        const auto& ignore = toml::find(global_ff_data, "ignore");
+        ignore_list        = read_ignore_molecule_and_particles_within(ignore, topology);
+        ignore_group_pairs = read_ignore_group(ignore);
+    }
+
+    return KimHummerHydrophobicForceFieldGenerator(
+            cutoff, epsilon, alpha, temperature, radius_vec, restype_vec, ignore_list, use_periodic,
+            ignore_group_pairs, group_vec);
+}
+
 // -----------------------------------------------------------------------------
 // read external force field
 
@@ -2708,6 +2780,7 @@ read_toml_exv_rectangular_box_ff_generator(
     return EXVRectangularBoxForceFieldGenerator(
             eps, box_lower_nm, box_upper_nm, indices, radii, use_periodic);
 }
+
 
 // CylindricalRestraint input is like below
 // [[forcefields.external]]

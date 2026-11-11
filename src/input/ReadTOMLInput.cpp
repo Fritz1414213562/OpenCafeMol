@@ -657,6 +657,24 @@ SystemGenerator read_toml_system(const toml::value& data)
                 system_gen.add_ff_generator(
                     std::make_unique<ProteinDNANonSpecificForceFieldGenerator>(ff_gen));
             }
+            else if(potential == "KimHummerHydrophobic")
+            {
+                const auto attr = toml::find(systems[0], "attributes");
+
+                if(!attr.contains("temperature"))
+                {
+                    throw std::runtime_error(
+                        "[error] attributes table must contains temperature for KimHummerHydrophobicity potential.");
+                }
+                const auto temperature = toml::find<double>(attr, "temperature");
+
+                KimHummerHydrophobicForceFieldGenerator ff_gen =
+                    read_toml_kim_hummer_hydrophobic_ff_generator(global_ff, system_size,
+                        temperature, topology, group_vec,
+                        use_periodic);
+                system_gen.add_ff_generator(
+                        std::make_unique<KimHummerHydrophobicForceFieldGenerator>(ff_gen));
+            }
 
             // Non-pair interaction case
             if(interaction == "3SPN2CrossStacking")

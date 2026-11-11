@@ -33,4 +33,5 @@ target_sources(opencm PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/UniformLennardJonesAttractiveForceFieldGenerator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/UniformWeeksChandlerAndersenForceFieldGenerator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/WeeksChandlerAndersenForceFieldGenerator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/KimHummerHydrophobicForceFieldGenerator.cpp
     )
